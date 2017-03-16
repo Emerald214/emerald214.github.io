@@ -83,3 +83,7 @@ exclude:
   - LICENSE
   - README.md
   - CNAME
+
+# Connect to local server using mobile
+# Refer to https://goo.gl/jddZgQ
+host: 0.0.0.0

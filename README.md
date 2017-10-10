@@ -14,17 +14,19 @@ params:
     depth: 1
     rootPath: /travel
     includeSystemProperties: false
+    bypassWorkspaceAcls: true
     nodeTypes:
       0: mgnl:page
       1: mgnl:area
       2: mgnl:component
   stories:
     includeSystemProperties: false
+    bypassWorkspaceAcls: true
 ```
 
-| Name | Requisiteness | Description | Default | 
+| Name | Required | Description | Default | 
 | ------ | ------ | ------ | ------ |
-| ```<endpoint nane>``` | Yes | Endpoint name | |
+| ```<endpoint name>``` | Yes | Endpoint name | |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;```class``` | Yes | info.magnolia.rest.delivery.jcr.ConfiguredJcrDeliveryEndpointDefinition | |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;```implementationClass``` | Yes | info.magnolia.rest.delivery.jcr.v1.JcrDeliveryEndpoint | |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;```params``` | Yes | Contains the workspaces you want to expose and deliver | |
@@ -122,7 +124,7 @@ GET /delivery/{workspace}/v1?param1=value1&param2=value2
 
 | Parameter | Default value | Description | Parameter type | Data type |
 | ------ | ------ | ------ | ------ | ------ |
-| ```workspace``` | | [workspace](https://documentation.magnolia-cms.com/display/DOCS/Workspaces) | path | string |
+| ```workspace``` | | [Workspace](https://documentation.magnolia-cms.com/display/DOCS/Workspaces) | path | string |
 | ```nodeTypes``` | mgnl:content, mgnl:contentNode | Comma-separated string of [primary node types](https://documentation.magnolia-cms.com/display/DOCS/Node+types#Nodetypes-Magnoliaprimarynodetypes) | query | string |
 | ```q``` |  | Text to search (full-text search) | query | string |
 | ```orderBy``` | | Properties to order. For example: "mgnl:lastModified desc,title asc" | query | string |
@@ -271,6 +273,5 @@ curl -u superuser:superuser "http://<yourDomain>/.rest/delivery/website/v1?title
 
 ## Limitation
 
-
-
-
++ Can't register muliple Content Delivery Endpoints
++ There's no way to get content from multiple categories

@@ -34,6 +34,10 @@ First, install the *rest-content-delivery* module, possibly via Maven; it also d
 REST endpoints can be configured in YAML, following the typical light module conventions.  
 The Content Delivery module does _not_ provide a default endpoint config; it rather lets you configure yours, with minimal overhead.
 
+⚠️ Mind that, despite allowing config of multiple endpoints in different YAML files and/or JCR config,
+**there may be only one registration per endpoint class** (bound to its annotated `@Path`).  
+This holds true for the `JcrDeliveryEndpoint`.
+
 ## YAML configuration
 
 Content delivery basically supports two ways for configuring separate endpoints:

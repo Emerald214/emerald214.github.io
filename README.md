@@ -12,7 +12,7 @@ The endpoint behavior can be configured with a `JcrDeliveryEndpointDefinition` t
 Nodes are represented in the JSON output as plain object-graph, resembling the tree-structure of JCR nodes and properties.  
 Additionally, UUID references to other workspaces can be resolved and expanded within returned records.
 
-### Getting started
+## Getting started
 
 First, install the *rest-content-delivery* module, possibly via Maven; it also depends upon Magnolia's *rest-integration* module.
 
@@ -29,16 +29,16 @@ First, install the *rest-content-delivery* module, possibly via Maven; it also d
 </dependency>
 ```
 
-### Registering the delivery endpoint
+## Registering the delivery endpoint
 
 REST endpoints can be configured in YAML, following the typical light module conventions.  
 The Content Delivery module does _not_ provide a default endpoint config; it rather lets you configure yours, with minimal overhead.
 
-### YAML configuration
+## YAML configuration
 
 Content delivery basically supports two ways for configuring separate endpoints:
 
-#### 1) By system file path
+### 1) By system file path
 
 File path: `<light-module-name>/restEndpoints/<path-segment1>/<path-segment2>_<path-segment-n>_<endpoint-name>.yaml`
 
@@ -58,12 +58,12 @@ bypassWorkspaceAcls: true
 ```
 
 Examples:
-_.../modules/deliveryEndpointModule/restEndpoints/delivery\_v2.yaml_ (*)
-_.../modules/awesomeEndpointModule/restEndpoints/path/to/the\_awesomeEndpoint.yaml_
+* .../modules/deliveryEndpointModule/restEndpoints/delivery\_v2.yaml (*)
+* .../modules/awesomeEndpointModule/restEndpoints/path/to/the\_awesomeEndpoint.yaml
 
 (*) This configuration will be used as example throughout the tutorial
 
-#### 2) By `endpointPath`
+### 2) By `endpointPath`
 
 File path: `<light-module-name>/restEndpoints/<endpoint-name>.yaml`
 
@@ -85,7 +85,7 @@ bypassWorkspaceAcls: true
 
 ⚠️ Make sure you have web access on the corresponding request path.
 
-#### Parameters
+### Parameters
 
 | Name                      | Required | Description | Default | 
 | ------------------------- | -------- | ----------- | ------- |
@@ -101,7 +101,7 @@ bypassWorkspaceAcls: true
 | `limit`                   | No       | Defines the amount of results to return in a paginated result set. | `10` |
 | `bypassWorkspaceAcls`     | No       | Defines whether or not workspace permissions (ACLs) should be evaluated.<br/>URI permissions are still evaluated. | `false` |
 
-### Reading a single node
+## Reading a single node
 
 ```
 GET /{endpoint-path}/{node-path}
@@ -152,7 +152,7 @@ curl --request GET \
 }
 ```
 
-### Querying nodes
+## Querying nodes
 
 If no `<node-path>` is given, the delivery endpoint builds and executes a JCR query.
 
@@ -172,7 +172,7 @@ GET /{endpoint-path}?param1=value1&param2=value2&...
 | `offset`          | The start index in a paginated result set | defaults to `0` | |
 | `limit`           | The amount of results to return in a paginated result set | defaults to `10` | |
 
-#### Listing and paging
+### Listing and paging
 
 ##### Example
 
@@ -224,7 +224,7 @@ curl --request GET \
     ]
 }
 ```
-#### Full-text search
+### Full-text search
 
 ##### Example
 
@@ -368,7 +368,7 @@ The above URI comes from `http://<host>/.rest/delivery/v2?mgnl:created[in]=2017-
 }
 ```
 
-### Expand references
+## Expand references
 
 A node may contain references to other nodes. With the `references` property you can extend the configuration to let it resolve the referenced nodes in other workspaces.
 
@@ -442,7 +442,7 @@ curl --request GET \
 }
 ```
 
-### Exception Handling
+## Exception Handling
 
 Exceptions are caught in exception mappers and the responses are structurally displayed in requested media type
 * If requested media type is not supported, JSON is returned as fallback
@@ -451,7 +451,7 @@ Exceptions are caught in exception mappers and the responses are structurally di
 
 The tables below show several common exceptions, their status code and error code respectively.
 
-#### JAX-RS Exceptions
+### JAX-RS Exceptions
 
 | Exception              | HTTP status code | Error code       | Description                           | 
 |------------------------|------------------|------------------|---------------------------------------| 
@@ -463,7 +463,7 @@ The tables below show several common exceptions, their status code and error cod
 | ReaderException        | 400              | readerError      | JAX-RS exception                      | 
 | WriterException        | 500              | writerError      | JAX-RS exception                      | 
 
-#### Repository Exceptions
+### Repository Exceptions
 
 | Exception                | HTTP status code | Error code         | Description                           | 
 |--------------------------|------------------|--------------------|---------------------------------------| 
@@ -474,7 +474,7 @@ The tables below show several common exceptions, their status code and error cod
 | InvalidQueryException    | 400              | invalidQuery       | Query is invalid                      | 
 | PathNotFoundException    | 404              | pathNotFound       | Requested resource path is not found  | 
 
-#### Unknown exceptions
+### Unknown exceptions
 
 As for the exceptions not mentioned above, the status code is 500 and the error code is "unknown".
 

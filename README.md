@@ -256,7 +256,7 @@ curl --request GET \
 }
 ```
 
-#### Filters
+### Filters
 
 * Filter has this format `property[operator]=value`
   * For example, `http://<host>/.rest/delivery/v2?title[like]=tour`
@@ -280,7 +280,7 @@ curl --request GET \
 * If no operator is provided, `eq` is used by default
 * Mind that tbe brackets should be URL-encoded for some tools
 
-##### Special properties for filters
+#### Special properties for filters
 
 * `@name`: Filter nodes by their node name
 * `@ancestor`: Filter nodes under a given path

@@ -109,7 +109,7 @@ GET /{endpoint-path}/{node-path}
 
 | Path parameters   | Description |
 | ----------------- | ----------- |
-| `endpoint-path`   | An endpoint path depending on how you configure in (#yaml-configuration) |
+| `endpoint-path`   | An endpoint path depending on how you configure in [YAML configuration](#yaml-configuration) |
 | `node-path`       | A node path relative to the workspace root, or configured `rootPath`  |
 
 ##### Example

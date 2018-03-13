@@ -1,4 +1,4 @@
-[Link](#1\)-test)
+[Link](#1-test)
 
 # Magnolia REST Content Delivery
 

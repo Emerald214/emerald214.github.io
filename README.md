@@ -96,9 +96,9 @@ Lastly, if the endpoint path convention does not fit, the `endpointPath` propert
   * Versioning the API with the version suffix, for best consistency, can be combined with YAML deprecations on Magnolia 5.6
   * Don't version the API, keep it evolving in sync with rapidly changing data models, templates and frontend apps
   * Our declarative API versioning is now decoupled from versioning of the endpoint implementation
-* Our previous `v1.JcrDeliveryEndpoint` was statically mapped to `/.rest/delivery/<endpoint-prefix>/v1`. Magnolia's security setup comes with the `rest-anonymous` role, which grants public GET access to `/.rest/delivery/*`
+* Our previous `v1.JcrDeliveryEndpoint` was statically mapped to `/.rest/delivery/<endpoint-prefix>/v1`. Magnolia's security setup comes with the `rest-anonymous` role, which grants public GET access to `/.rest/delivery/*`.
   * If you want to leverage Magnolia's default setup for anonymous access, you may now place your endpoint definitions inside a `delivery` folder to match this pattern
-  * If not, ensure appropriate URI web access in Roles configuration.
+  * If not, ensure appropriate URI web access in Roles configuration
 
 ## Reading a single node
 

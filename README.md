@@ -1,5 +1,3 @@
-[Link](#1-test)
-
 # Magnolia REST Content Delivery
 
 The JCR Delivery endpoint serves JCR content in a concise JSON format.  
@@ -36,17 +34,30 @@ First, install the *rest-content-delivery* module, possibly via Maven; it also d
 REST endpoints can be configured in YAML, following the typical light module conventions.  
 The Content Delivery module does _not_ provide a default endpoint config; it rather lets you configure yours, with minimal overhead.
 
-⚠️ Mind that, despite allowing config of multiple endpoints in different YAML files and/or JCR config,
-**there may be only one registration per endpoint class** (bound to its annotated `@Path`).  
-This holds true for the `JcrDeliveryEndpoint`.
-
 ## YAML configuration
 
-Content delivery basically supports two ways for configuring separate endpoints:
+Content Delivery endpoints can be dynamically configured in [light modules](https://documentation.magnolia-cms.com/display/DOCS56/Definition+decoration#Definitiondecoration-Definitiondecoratorfilelocation), typically for each type of content. Magnolia's REST module uses `Convention over Configuration` to generate the API base path, etc.
 
-### 1) By system file path
+### 1) File path
 
-File path: `<light-module-name>/restEndpoints/<path-segment1>/<path-segment2>_<path-segment-n>_<endpoint-name>.yaml`
+`<light-module>/restEndpoints/<path>/<to>/<endpoint-name>_<version-tag>.yaml`
+
+| File path (under /restEndpoints)    | Endpoint path                  |
+| -----------------------------------| ------------------------------ |
+| `/stories.yaml`					    | `/.rest/stories`               |
+| `/delivery/stories.yaml`		        | `/.rest/delivery/stories`      |
+| `/stories/v3.yaml` (1)				  | `/.rest/stories/v3`            |
+| `/stories_v3.yaml` (2)				  | `/.rest/stories/v3`            |
+| `/delivery/stories_v3.yaml `  		  | `/.rest/delivery/stories/v3`   |
+
+* (1) Example 3rd revision of an endpoint definition
+* (2) Alternative supported syntax to keep a meaningful name
+
+⚠️ Make sure you have web access on the endpoint path.
+
+Please refer to [DynamicPath](https://git.magnolia-cms.com/projects/MODULES/repos/rest/browse/magnolia-rest-integration/src/main/java/info/magnolia/rest/DynamicPath.java) for technical details and take a look at [best practices](#3-best-practices) to configure it properly.
+
+### 2) File content
 
 ```yaml
 class: info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpointDefinition
@@ -59,39 +70,9 @@ childNodeTypes:
   - mgnl:area
   - mgnl:component
 depth: 1
-includeSystemProperties: false
 bypassWorkspaceAcls: true
-```
-
-Examples:
-* .../modules/deliveryEndpointModule/restEndpoints/delivery\_v2.yaml (*)
-* .../modules/awesomeEndpointModule/restEndpoints/path/to/the\_awesomeEndpoint.yaml
-
-(*) This configuration will be used as example throughout the tutorial
-
-### 2) By `endpointPath`
-
-File path: `<light-module-name>/restEndpoints/<endpoint-name>.yaml`
-
-```yaml
-class: info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpointDefinition
-workspace: website
-endpointPath: /path/to/endpoint
-rootPath: /travel
-nodeTypes:
-  - mgnl:page
-childNodeTypes:
-  - mgnl:page
-  - mgnl:area
-  - mgnl:component
-depth: 1
 includeSystemProperties: false
-bypassWorkspaceAcls: true
 ```
-
-⚠️ Make sure you have web access on the corresponding request path.
-
-### Parameters
 
 | Name                      | Required | Description | Default | 
 | ------------------------- | -------- | ----------- | ------- |
@@ -106,6 +87,18 @@ bypassWorkspaceAcls: true
 | `childNodeTypes`          | No       | List of [primary node types](https://documentation.magnolia-cms.com/display/DOCS/Node+types#Nodetypes-Magnoliaprimarynodetypes) for filtering child nodes | `mgnl:contentNode` |
 | `limit`                   | No       | Defines the amount of results to return in a paginated result set. | `10` |
 | `bypassWorkspaceAcls`     | No       | Defines whether or not workspace permissions (ACLs) should be evaluated.<br/>URI permissions are still evaluated. | `false` |
+
+Lastly, if the endpoint path convention does not fit, the `endpointPath` property can be configured, and then overrides the automatic path.
+
+### 3) Best practices
+
+* You are now in control of your API versioning strategy
+  * Versioning the API with the version suffix, for best consistency, can be combined with YAML deprecations on Magnolia 5.6
+  * Don't version the API, keep it evolving in sync with rapidly changing data models, templates and frontend apps
+  * Our declarative API versioning is now decoupled from versioning of the endpoint implementation
+* Our previous `v1.JcrDeliveryEndpoint` was statically mapped to `/.rest/delivery/<endpoint-prefix>/v1`. Magnolia's security setup comes with the `rest-anonymous` role, which grants public GET access to `/.rest/delivery/*`
+  * If you want to leverage Magnolia's default setup for anonymous access, you may now place your endpoint definitions inside a `delivery` folder to match this pattern
+  * If not, ensure appropriate URI web access in Roles configuration.
 
 ## Reading a single node
 
@@ -124,7 +117,7 @@ Given the [YAML configuration above](#yaml-configuration), we can make the follo
 
 ```sh
 curl --request GET \
-  --url http://<host>/.rest/delivery/v2/about
+  --url http://<host>/.rest/delivery/pages/about
 ```
 
 ##### Response
@@ -174,9 +167,11 @@ GET /{endpoint-path}?param1=value1&param2=value2&...
 | Query parameters  | Description | Value | Default |
 | ----------------- | ----------- | ----- | ------- |
 | `q`               | Search terms for full-text search | | 
-| `orderBy`         | One or multiple property names and directions to sort the query | for example `mgnl:lastModified desc,title asc` | If no direction is specified, `asc` is used |
+| `orderBy`         | One or multiple property names and directions to sort the query | for example `mgnl:lastModified desc,title asc` | If no direction is specified, `asc` is used. |
 | `offset`          | The start index in a paginated result set | defaults to `0` | |
 | `limit`           | The amount of results to return in a paginated result set | defaults to `10` | |
+
+* Mind that if no `orderBy` is passed, the order depends on `respectDocumentOrder` config of JackRabbit
 
 ### Listing and paging
 
@@ -186,7 +181,7 @@ Given the [YAML configuration above](#yaml-configuration), we can make the follo
 
 ```sh
 curl --request GET \
-  --url http://<host>/.rest/delivery/v2?limit=2
+  --url http://<host>/.rest/delivery/pages?limit=2
 ```
 
 ##### Response
@@ -236,7 +231,7 @@ curl --request GET \
 
 ```sh
 curl --request GET \
-  --url http://<host>/.rest/delivery/v2?q=marketing
+  --url http://<host>/.rest/delivery/pages?q=marketing
 ```
 
 ##### Response
@@ -265,7 +260,7 @@ curl --request GET \
 ### Filters
 
 * Filter has this format `property[operator]=value`
-  * For example, `http://<host>/.rest/delivery/v2?title[like]=tour`
+  * For example, `http://<host>/.rest/delivery/pages?title[like]=tour`
 * Supported operators
   * `ne` means `<>`
   * `eq` means `=`
@@ -277,7 +272,7 @@ curl --request GET \
   * `in` means `IN`
   * `not-in` means `NOT IN`
 * For `in` and `not-in`, a range symbol `~` should be provided
-  * For example,  `http://<host>/.rest/delivery/v2?mgnl:created[in]=2018-01-01~2018-02-01`
+  * For example,  `http://<host>/.rest/delivery/pages?mgnl:created[in]=2018-01-01~2018-02-01`
 * For filtering by time, only two ISO-8601-based formats are accepted 
   * Date: `yyyy-MM-dd`
     * For example, `2018-01-01`
@@ -295,7 +290,7 @@ curl --request GET \
 
 ```sh
 curl --request GET \
-  --url http://<host>/.rest/delivery/v2?title=Our+Company
+  --url http://<host>/.rest/delivery/pages?title=Our+Company
 ```
 
 ##### Response
@@ -325,10 +320,9 @@ curl --request GET \
 Using IN operator
 
 ```sh
-curl --request GET \
---url http://<host>/.rest/delivery/v2?mgnl:created%5Bin%5D=2017-07-01~2017-07-25
+curl --request GET --globoff \
+ --url 'http://<host>/.rest/delivery/pages?mgnl:created[in]=2018-01-01~2018-02-01'
 ```
-The above URI comes from `http://<host>/.rest/delivery/v2?mgnl:created[in]=2017-07-01~2017-07-25` with brackets URL-encoded.
 
 ##### Response
 
@@ -382,12 +376,15 @@ A node may contain references to other nodes. With the `references` property you
 class: info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpointDefinition
 workspace: tours
 bypassWorkspaceAcls: true
+includeSystemProperties: false
 references:
   - name: tourTypeReference
     propertyName: tourTypes
     referenceResolver:
+      class: info.magnolia.rest.reference.jcr.JcrReferenceResolverDefinition
       targetWorkspace: category
-      implementationClass: info.magnolia.rest.reference.jcr.UuidToNodeReferenceResolver
+      expand: true
+      generateLink: true
 ```
 
 | Name                                                                                         | Required | Description | Default | 
@@ -397,14 +394,17 @@ references:
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`propertyName`                                | Yes      | Defines for which property to resolve a reference. This supports regular expressions. | |
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`nodeType`                                    | No       | Defines which node type to apply the reference to | |
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`referenceResolver`                           | No       | A reference resolver definition | `info.magnolia.rest.reference.ReferenceResolverDefinition` |
-|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`implementationClass` | Yes      | Defines the reference resolver implementation to use.<br/>must extend from `info.magnolia.rest.reference.ReferenceResolver` | The following UUID-based resolver is provided for convenience:<br/> `info.magnolia.rest.reference.jcr.UuidReferenceResolver` |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`class`               | Yes      | Defines the reference resolver class to use.<br/>It must extend from `info.magnolia.rest.reference.ReferenceResolverDefinition` | The following resolver is provided for convenience:<br/>`info.magnolia.rest.reference.jcr.JcrReferenceResolverDefinition` |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`implementationClass` | No       | Defines the reference resolver implementation to use.<br/>It must extend from `info.magnolia.rest.reference.ReferenceResolverDefinition` | The following resolver is provided for convenience:<br/>`info.magnolia.rest.reference.jcr.ConfiguredJcrReferenceResolverDefinition` |
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`targetWorkspace`     | Yes      | Defines within which target workspace the resolver should operate | |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`generateLink`        | No       | A flag to show the link to node | false |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`expand`              | No       | A flag to expand the object | true |
 
 ##### Example
 
 ```sh
 curl --request GET \
-  --url http://<host>/.rest/delivery/v2/magnolia-travels/Hut-to-Hut-in-the-Swiss-Alps
+  --url http://<host>/.rest/delivery/tours/magnolia-travels/Hut-to-Hut-in-the-Swiss-Alps
 ```
 
 ##### Response
@@ -430,10 +430,11 @@ curl --request GET \
             "name": "active",
             "level": "level-1",
             "description": "...",
-            "icon": "jcr:57ad1ee6-87a5-4fb7-ac8c-16f6fdf35d28",
             "displayName_de": "Aktiv",
+            "icon": "jcr:57ad1ee6-87a5-4fb7-ac8c-16f6fdf35d28",
             "displayName": "Active",
             "image": "jcr:b601ef57-a44a-432d-bc9a-bb228890b01d",
+            "@link": "http://localhost:8080/magnolia/tour-types/active",
             "@nodes": []
         }
     ],
@@ -448,7 +449,85 @@ curl --request GET \
 }
 ```
 
-## Exception Handling
+### Expand asset
+
+You can also expand an asset using `AssetReferenceResolverDefinition`
+
+```
+class: info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpointDefinition
+workspace: tours
+bypassWorkspaceAcls: true
+includeSystemProperties: false
+references:
+  - name: tourImageReference
+    propertyName: image
+    referenceResolver:
+      class: info.magnolia.rest.reference.dam.AssetReferenceResolverDefinition
+```
+
+| Name                                                                                          | Required | Description | Default | 
+| --------------------------------------------------------------------------------------------- | -------- | ----------- | ------- |
+| \<Same as above\>                                                                             |          |             |         |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`referenceResolver`                            | No       | A reference resolver definition | `info.magnolia.rest.reference.ReferenceResolverDefinition` |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`class`                | Yes      | Defines the reference resolver class to use.<br/>It must extend from `info.magnolia.rest.reference.ReferenceResolverDefinition` | The following resolver is provided for convenience:<br/>`info.magnolia.rest.reference.dam.AssetReferenceResolverDefinition` |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`implementationClass`  | No       | Defines the reference resolver implementation to use.<br/>It must extend from `info.magnolia.rest.reference.ConfiguredReferenceResolverDefinition` | The following resolver is provided for convenience:<br/>`info.magnolia.rest.reference.dam.ConfiguredAssetReferenceResolverDefinition` |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`expand`               | No       | A flag to expand the object | true |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`includeAssetMetadata` | No       | A flag to include asset meta data | true |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`includeDownloadLink`  | No       | A flag to include download link | true |
+
+##### Example
+
+```sh
+curl --request GET \
+  --url http://<host>/.rest/delivery/tours/magnolia-travels/Hut-to-Hut-in-the-Swiss-Alps
+```
+
+##### Response
+```json
+{
+    "@name": "Hut-to-Hut-in-the-Swiss-Alps",
+    "@path": "/magnolia-travels/Hut-to-Hut-in-the-Swiss-Alps",
+    "@id": "d30b9ca6-e22d-45c5-9456-7538ab7bccf8",
+    "@nodeType": "mgnl:content",
+    "name": "Hut to Hut in the Swiss Alps",
+    "description": "...",
+    "location": "Zurich, Switzerland",
+    "tourTypes": [
+        "eaf9a648-fae1-48ae-a293-69bed874f159"
+    ],
+    "author": "Magnolia Travels",
+    "body": "...",
+    "destination": [
+        "6cc50e28-fb0e-4e49-b3b6-728690a2e861"
+    ],
+    "duration": "7",
+    "image": {
+        "@name": "flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
+        "@path": "/tours/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
+        "@id": "jcr:80d091ae-22ce-4cfc-b302-cb39f25c3d30",
+        "@link": "/magnoliaAuthor/dam/jcr:80d091ae-22ce-4cfc-b302-cb39f25c3d30/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
+        "metadata": {
+            "fileName": "flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
+            "mimeType": "image/jpeg",
+            "caption": "Ed Coyle",
+            "fileSize": "910566",
+            "height": "1361",
+            "width": "2048",
+            "format": "image/jpeg",
+            "rights": "by-nd/2.0",
+            "creator": [
+                "superuser"
+            ],
+            "date": "2015-06-03T14:32:41.867+07:00",
+            "created": "2015-01-29T14:54:01.034+07:00",
+            "modified": "2015-06-03T14:32:41.867+07:00"
+        }
+    },
+    "@nodes": []
+}
+```
+
+## Exception handling
 
 Exceptions are caught in exception mappers and the responses are structurally displayed in requested media type
 * If requested media type is not supported, JSON is returned as fallback
@@ -480,15 +559,11 @@ The tables below show several common exceptions, their status code and error cod
 | InvalidQueryException    | 400              | invalidQuery       | Query is invalid                      | 
 | PathNotFoundException    | 404              | pathNotFound       | Requested resource path is not found  | 
 
-### Unknown exceptions
-
-As for the exceptions not mentioned above, the status code is 500 and the error code is "unknown".
-
 ##### Example
 
 ```sh
 curl --request GET \
-  --url 'http://<host>/.rest/delivery/v2/pathNoFound'
+  --url 'http://<host>/.rest/delivery/pages/pathNoFound'
 ```
 
 ##### Response
@@ -502,5 +577,98 @@ curl --request GET \
 }
 ```
 
+##### Unknown exceptions
 
-### 1) Test
+As for the exceptions that are not mentioned above, the status code is 500 and the error code is "unknown".
+
+## Localization
+
+Users can get localized content by using either `lang` request parameter or `Accept-Language` HTTP header.
+
+* If both are provided, `lang` has higher priority.
+* If both are not provided, the locale is retrieved by `18nContentSupport#getLocale`
+
+### 1) `lang` request parameter
+
+* The languages are configured in `i18n` node of the corresponding site
+  * For example, `/travel/i18n` for `travel` site
+* `lang=all` returns data without i18n effect
+* If no locale matches with requested locale, the closest supported locale is returned
+  * See `AbstractI18nContentSupport#getNextLocale`
+
+##### Example:
+
+```sh
+curl --request GET --url http://<host>/.rest/delivery/pages/about?lang=de
+```
+
+##### Response
+
+```
+{
+    "@name": "about",
+    "@path": "/travel/about",
+    "@id": "808ebe4c-72b2-49f1-b9f7-e7db22bce02f",
+    "@nodeType": "mgnl:page",
+    "hideInNav": "false",
+    "title": "Über uns",
+    "main": { ... },
+    "footer": { ... },
+    "company": {
+        "@name": "company",
+        "@path": "/travel/about/company",
+        "@id": "8fa4a73f-51c3-40ac-b698-715595216186",
+        "@nodeType": "mgnl:page",
+        "hideInNav": "false",
+        "title": "Unser Unternehmen",
+        "@nodes": []
+    },
+    "what-we-believe": {
+        "@name": "what-we-believe",
+        "@path": "/travel/about/what-we-believe",
+        "@id": "f28c5cec-3567-485e-a8db-196339aa82b5",
+        "@nodeType": "mgnl:page",
+        "hideInNav": "false",
+        "title": "Woran wir glauben",
+        "@nodes": []
+    },
+    "careers": {
+        "@name": "careers",
+        "@path": "/travel/about/careers",
+        "@id": "30058d95-f1c8-4b0a-b0ad-34b710e7c367",
+        "@nodeType": "mgnl:page",
+        "hideInNav": "false",
+        "title": "Karriere",
+        "@nodes": []
+    },
+    "@nodes": [
+        "main",
+        "footer",
+        "company",
+        "what-we-believe",
+        "careers"
+    ]
+}
+```
+
+
+### 2) `Accept-Language` request HTTP header 
+
+Similar to [Accept-Language](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Language)
+
+* `*` wildcard
+  * For example:  `Accept-Language: *`
+  * It accepts any language sever returns
+* Multiple types weighted by `quality value`
+  * For example, `fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5`
+  * Best match of supported languages is selected based on weight
+
+##### Example
+
+```
+curl --request GET --url http://<host>/.rest/delivery/pages/about --header "Accept-Language: fr;q=0.9, de;q=0.8, en;q=0.7"
+```
+
+##### Response
+
+Same response with 1)

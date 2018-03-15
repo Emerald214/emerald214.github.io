@@ -36,7 +36,7 @@ The Content Delivery module does _not_ provide a default endpoint config; it rat
 
 ## YAML configuration
 
-Content Delivery endpoints can be dynamically configured in [light modules](https://documentation.magnolia-cms.com/display/DOCS56/Definition+decoration#Definitiondecoration-Definitiondecoratorfilelocation), typically for each type of content. Magnolia's REST module uses `Convention over Configuration` to generate the API base path, etc.
+Content Delivery endpoints can be dynamically configured in [light modules](https://documentation.magnolia-cms.com/display/DOCS56/Light+modules), typically for each type of content. Magnolia's REST module uses _Convention over Configuration_ to generate the API base path, etc.
 
 ### 1) File path
 
@@ -55,7 +55,7 @@ Content Delivery endpoints can be dynamically configured in [light modules](http
 
 ⚠️ Make sure you have web access on the endpoint path.
 
-Please refer to [DynamicPath](https://git.magnolia-cms.com/projects/MODULES/repos/rest/browse/magnolia-rest-integration/src/main/java/info/magnolia/rest/DynamicPath.java) for technical details and take a look at [best practices](#3-best-practices) to configure it properly.
+Please refer to [`DynamicPath`](https://git.magnolia-cms.com/projects/MODULES/repos/rest/browse/magnolia-rest-integration/src/main/java/info/magnolia/rest/DynamicPath.java) for technical details and take a look at [best practices](#3-best-practices) to configure it properly.
 
 ### 2) File content
 
@@ -78,8 +78,8 @@ includeSystemProperties: false
 | ------------------------- | -------- | ----------- | ------- |
 | `class`                   | Yes      | | `info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpointDefinition` |
 | `implementationClass`     | No       | | `info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpoint` |
-| `workspace`               | No       | Defines the target [workspace](https://documentation.magnolia-cms.com/display/DOCS/Workspaces) to serve content from. | If empty, the endpoint prefix is used |
-| `endpointPath`            | No       | Defines the endpoint path and ignore the system file path. | |
+| `workspace`               | No       | Defines the target [workspace](https://documentation.magnolia-cms.com/display/DOCS/Workspaces) to serve content from. | If empty, the endpoint name is used |
+| `endpointPath`            | No       | Defines the endpoint path and ignore the automatic path deduced from the conventions. | |
 | `rootPath`                | No       | Defines the root path used to resolve the given node path parameter, and to execute queries. | |
 | `depth`                   | No       | Defines the depth for child-nodes to be included in the responses. | `0` |
 | `includeSystemProperties` | No       | Defines whether jcr:—and mgnl:-prefixed properties will be included in responses. | `true` |
@@ -93,8 +93,8 @@ Lastly, if the endpoint path convention does not fit, the `endpointPath` propert
 ### 3) Best practices
 
 * You are now in control of your API versioning strategy
-  * Versioning the API with the version suffix, for best consistency, can be combined with YAML deprecations on Magnolia 5.6
-  * Don't version the API, keep it evolving in sync with rapidly changing data models, templates and frontend apps
+  * Version the API with the version suffix, for best consistency; this can be combined with YAML deprecations on Magnolia 5.6;
+  * or don't version the API, keep it evolving in sync with rapidly changing data models, templates and frontend apps
   * Our declarative API versioning is now decoupled from versioning of the endpoint implementation
 * Our previous `v1.JcrDeliveryEndpoint` was statically mapped to `/.rest/delivery/<endpoint-prefix>/v1`. Magnolia's security setup comes with the `rest-anonymous` role, which grants public GET access to `/.rest/delivery/*`.
   * If you want to leverage Magnolia's default setup for anonymous access, you may now place your endpoint definitions inside a `delivery` folder to match this pattern

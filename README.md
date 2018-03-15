@@ -370,7 +370,7 @@ curl --request GET --globoff \
 
 ## Expand references
 
-A node may contain references to other nodes. With the `references` property you can extend the configuration to let it resolve the referenced nodes in other workspaces.
+A node may contain references to other nodes. With the `references` property, you can extend the configuration to let it resolve the referenced nodes in other workspaces.
 
 ```yaml
 class: info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpointDefinition
@@ -451,7 +451,7 @@ curl --request GET \
 
 ### Expand asset
 
-You can also expand an asset using `AssetReferenceResolverDefinition`
+You can also expand an asset using `AssetReferenceResolverDefinition`.
 
 ```
 class: info.magnolia.rest.delivery.jcr.v2.JcrDeliveryEndpointDefinition
@@ -463,6 +463,10 @@ references:
     propertyName: image
     referenceResolver:
       class: info.magnolia.rest.reference.dam.AssetReferenceResolverDefinition
+      assetRenditions:
+        - 1600
+        - 1600x1200
+        - nonexistent
 ```
 
 | Name                                                                                          | Required | Description | Default | 
@@ -474,12 +478,13 @@ references:
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`expand`               | No       | A flag to expand the object | true |
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`includeAssetMetadata` | No       | A flag to include asset meta data | true |
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`includeDownloadLink`  | No       | A flag to include download link | true |
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`assetRenditions`  | No       | Defines a list of [variation names](https://documentation.magnolia-cms.com/display/DOCS56/Theme#Theme-Imagevariations)</br>Requires 3 dependencies: `dam`, `dam-imaging` and `site` | |
 
 ##### Example
 
 ```sh
 curl --request GET \
-  --url http://<host>/.rest/delivery/tours/magnolia-travels/Hut-to-Hut-in-the-Swiss-Alps
+  --url http://<host>/.rest/delivery/trips/magnolia-travels/Hut-to-Hut-in-the-Swiss-Alps
 ```
 
 ##### Response
@@ -505,7 +510,7 @@ curl --request GET \
         "@name": "flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
         "@path": "/tours/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
         "@id": "jcr:80d091ae-22ce-4cfc-b302-cb39f25c3d30",
-        "@link": "/magnoliaAuthor/dam/jcr:80d091ae-22ce-4cfc-b302-cb39f25c3d30/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
+        "@link": "/dam/jcr:80d091ae-22ce-4cfc-b302-cb39f25c3d30/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
         "metadata": {
             "fileName": "flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg",
             "mimeType": "image/jpeg",
@@ -521,18 +526,54 @@ curl --request GET \
             "date": "2015-06-03T14:32:41.867+07:00",
             "created": "2015-01-29T14:54:01.034+07:00",
             "modified": "2015-06-03T14:32:41.867+07:00"
+        },
+        "renditions": {
+            "1600": {
+                "mimeType": "image/jpeg",
+                "link": "/.imaging/mte/travel-demo-theme/1600/dam/tours/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg/jcr:content/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg"
+            },
+            "1600x1200": {
+                "mimeType": "image/jpeg",
+                "link": "/.imaging/mte/travel-demo-theme/1600x1200/dam/tours/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg/jcr:content/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg"
+            },
+            "nonexistent": {
+                "mimeType": "image/jpeg",
+                "link": "/.imaging/default/dam/tours/flickr-swiss-trails-ed-coyle-3797048134_1f4a930f48_o.jpg/jcr:content.jpg"
+            }
         }
     },
     "@nodes": []
 }
 ```
 
+The imaging defintion of the above example can be referred to at `/travel-demo/themes/travel-demo-theme.yaml`
+
+```
+imaging:
+  class: info.magnolia.templating.imaging.VariationAwareImagingSupport
+  variations:
+    "1600":
+      class: info.magnolia.templating.imaging.variation.SimpleResizeVariation
+      width: 1600
+    ...
+    "1600x1200":
+      class: info.magnolia.templating.imaging.variation.SimpleResizeVariation
+      height: 1200
+      width: 1600
+```
+
+### Side notes
+
+* `renditions` block is returned with respect to `imaging` definition of a site definition
+* A nonexistent rendition returns a link `/.imaging/default/...` because it is handled by [DefaultVariation](https://git.magnolia-cms.com/projects/MODULES/repos/imaging/browse/magnolia-imaging/src/main/java/info/magnolia/imaging/variation/DefaultVariation.java)
+* Don't be confused between [image variations](https://documentation.magnolia-cms.com/display/DOCS56/Theme#Theme-Imagevariations) and [imaging generators](https://documentation.magnolia-cms.com/display/DOCS56/Imaging+module#Imagingmodule-Imagegenerators)
+
 ## Exception handling
 
-Exceptions are caught in exception mappers and the responses are structurally displayed in requested media type
-* If requested media type is not supported, JSON is returned as fallback
+Exceptions are caught in exception mappers and responses are structurally displayed in a requested media type
+* If the requested media type is not supported, JSON is returned as fallback
 * If no resource method is matched, JSON is returned as fallback
-* Legacy endpoints no longer always return exception in plain text
+* Legacy endpoints no longer always return exceptions in plain text
 
 The tables below show several common exceptions, their status code and error code respectively.
 
@@ -585,7 +626,7 @@ As for the exceptions that are not mentioned above, the status code is 500 and t
 
 Users can get localized content by using either `lang` request parameter or `Accept-Language` HTTP header.
 
-* If both are provided, `lang` has higher priority.
+* If both are provided, `lang` has higher priority
 * If both are not provided, the locale is retrieved by `18nContentSupport#getLocale`
 
 ### 1) `lang` request parameter
@@ -593,7 +634,7 @@ Users can get localized content by using either `lang` request parameter or `Acc
 * The languages are configured in `i18n` node of the corresponding site
   * For example, `/travel/i18n` for `travel` site
 * `lang=all` returns data without i18n effect
-* If no locale matches with requested locale, the closest supported locale is returned
+* If no locale matches with the requested locale, the closest supported locale is returned
   * See `AbstractI18nContentSupport#getNextLocale`
 
 ##### Example:
@@ -650,7 +691,6 @@ curl --request GET --url http://<host>/.rest/delivery/pages/about?lang=de
     ]
 }
 ```
-
 
 ### 2) `Accept-Language` request HTTP header 
 

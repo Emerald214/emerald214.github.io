@@ -85,6 +85,7 @@ includeSystemProperties: false
 | `includeSystemProperties` | No       | Defines whether jcr:—and mgnl:-prefixed properties will be included in responses. | `true` |
 | `nodeTypes`               | No       | List of [primary node types](https://documentation.magnolia-cms.com/display/DOCS/Node+types#Nodetypes-Magnoliaprimarynodetypes) for filtering queried node | `mgnl:content` |
 | `childNodeTypes`          | No       | List of [primary node types](https://documentation.magnolia-cms.com/display/DOCS/Node+types#Nodetypes-Magnoliaprimarynodetypes) for filtering child nodes | `mgnl:contentNode` |
+| `strict`                  | No       | Specifies whether to include only the exact node type and ignore sub types | `false` |
 | `limit`                   | No       | Defines the amount of results to return in a paginated result set. | `10` |
 | `bypassWorkspaceAcls`     | No       | Defines whether or not workspace permissions (ACLs) should be evaluated.<br/>URI permissions are still evaluated. | `false` |
 
@@ -113,7 +114,7 @@ GET /{endpoint-path}/{node-path}
 
 ##### Example
 
-Given the [YAML configuration above](#yaml-configuration), we can make the following request
+Given the [YAML configuration above](#yaml-configuration), you can make the following request
 
 ```sh
 curl --request GET \
@@ -177,7 +178,7 @@ GET /{endpoint-path}?param1=value1&param2=value2&...
 
 ##### Example
 
-Given the [YAML configuration above](#yaml-configuration), we can make the following request
+Given the [YAML configuration above](#yaml-configuration), you can make the following request
 
 ```sh
 curl --request GET \
@@ -189,32 +190,32 @@ curl --request GET \
 {
     "results": [
         {
-            "@name": "about",
-            "@path": "/travel/about",
-            "@id": "808ebe4c-72b2-49f1-b9f7-e7db22bce02f",
+            "@name": "book-tour",
+            "@path": "/travel/book-tour",
+            "@id": "60e1aa3e-23d6-4200-ad28-20c3b969ab89",
             "@nodeType": "mgnl:page",
-            "hideInNav": "false",
-            "title": "About",
+            "hideInNav": "true",
+            "title": "Book your tour",
+            "meal": { ... },
+            "personal-details": { ... },
+            "review": { ... },
             "main": { ... },
             "footer": { ... },
-            "company": { ... },
-            "what-we-believe": { ... },
-            "careers": { ... },
             "@nodes": [
+                "meal",
+                "personal-details",
+                "review",
                 "main",
-                "footer",
-                "company",
-                "what-we-believe",
-                "careers"
+                "footer"
             ]
         },
         {
-            "@name": "about-demo",
-            "@path": "/travel/meta/about-demo",
-            "@id": "c1e9ac13-60c1-430a-8ee3-6c70078bf403",
+            "@name": "customer-experience-agent",
+            "@path": "/travel/about/careers/customer-experience-agent",
+            "@id": "1f8af166-258f-4351-a543-3d0fc8bb00c0",
             "@nodeType": "mgnl:page",
             "hideInNav": "false",
-            "title": "About this demo",
+            "title": "Customer Experience Agent",
             "main": { ... },
             "footer": { ... },
             "@nodes": [
@@ -335,29 +336,9 @@ curl --request GET --globoff \
             "@id": "f8cbedd6-df91-4d7c-a952-2dc414d97704",
             "@nodeType": "mgnl:page",
             "title": "Stories",
-            "story": {
-                "@name": "story",
-                "@path": "/travel/stories/story",
-                "@id": "a096ec20-c190-4b2e-91a4-294c99b64049",
-                "@nodeType": "mgnl:page",
-                "hideInNav": "true",
-                "title": "Story",
-                "@nodes": []
-            },
-            "main": {
-                "@name": "main",
-                "@path": "/travel/stories/main",
-                "@id": "22ba6501-a0fa-4762-bb6c-37cb729166df",
-                "@nodeType": "mgnl:area",
-                "@nodes": []
-            },
-            "footer": {
-                "@name": "footer",
-                "@path": "/travel/stories/footer",
-                "@id": "ca3dd2d9-6660-43e5-b580-9063de9ca60e",
-                "@nodeType": "mgnl:area",
-                "@nodes": []
-            },
+            "story": { ... },
+            "main": { ... },
+            "footer": { ... },
             "@nodes": [
                 "story",
                 "main",
@@ -368,7 +349,7 @@ curl --request GET --globoff \
 }
 ```
 
-## Expand references
+## Expanding references
 
 A node may contain references to other nodes. With the `references` property, you can extend the configuration to let it resolve the referenced nodes in other workspaces.
 
@@ -449,7 +430,7 @@ curl --request GET \
 }
 ```
 
-### Expand asset
+### Expanding asset
 
 You can also expand an asset using `AssetReferenceResolverDefinition`.
 
@@ -567,6 +548,77 @@ imaging:
 * `renditions` block is returned with respect to `imaging` definition of a site definition
 * A nonexistent rendition returns a link `/.imaging/default/...` because it is handled by [DefaultVariation](https://git.magnolia-cms.com/projects/MODULES/repos/imaging/browse/magnolia-imaging/src/main/java/info/magnolia/imaging/variation/DefaultVariation.java)
 * Don't be confused between [image variations](https://documentation.magnolia-cms.com/display/DOCS56/Theme#Theme-Imagevariations) and [imaging generators](https://documentation.magnolia-cms.com/display/DOCS56/Imaging+module#Imagingmodule-Imagegenerators)
+
+## Listing child nodes
+
+You can also get a list of child nodes under a specified node path
+
+```
+GET /{endpoint-path}/{node-path}/@nodes
+```
+
+| Path parameters   | Description |
+| ----------------- | ----------- |
+| `endpoint-path`   | An endpoint path depending on how you configure in [YAML configuration](#yaml-configuration) |
+| `node-path`       | A node path relative to the workspace root, or configured `rootPath`  |
+
+##### Example
+
+Given the [YAML configuration above](#yaml-configuration), you can make the following request
+
+```sh
+curl --request GET \
+  --url http://<host>/.rest/delivery/pages/about/careers/@nodes
+```
+
+##### Response
+
+```json
+[
+    {
+        "@name": "customer-experience-agent",
+        "@path": "/travel/about/careers/customer-experience-agent",
+        "@id": "1f8af166-258f-4351-a543-3d0fc8bb00c0",
+        "@nodeType": "mgnl:page",
+        "hideInNav": "false",
+        "title": "Customer Experience Agent",
+        "main": { ... },
+        "footer": { ... },
+        "@nodes": [
+            "main",
+            "footer"
+        ]
+    },
+    {
+        "@name": "customer-experience-supervisor",
+        "@path": "/travel/about/careers/customer-experience-supervisor",
+        "@id": "c8e6902a-499a-44d7-9de9-45fd93d60a6b",
+        "@nodeType": "mgnl:page",
+        "hideInNav": "false",
+        "title": "Customer Experience Supervisor",
+        "main": { ... },
+        "footer": { ... },
+        "@nodes": [
+            "main",
+            "footer"
+        ]
+    },
+    {
+        "@name": "marketing-associate",
+        "@path": "/travel/about/careers/marketing-associate",
+        "@id": "f19c60f2-3049-4883-a170-4bf65e3abb91",
+        "@nodeType": "mgnl:page",
+        "hideInNav": "false",
+        "title": "Marketing Associate",
+        "main": { ... },
+        "footer": { ... },
+        "@nodes": [
+            "main",
+            "footer"
+        ]
+    }
+]
+```
 
 ## Exception handling
 
